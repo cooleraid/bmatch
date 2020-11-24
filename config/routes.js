@@ -47,4 +47,11 @@ module.exports.routes = {
     action: 'callback',
   },
 
+  'GET /privacy-policy': {
+    view: 'pages/privacy-policy'
+  },
+  'GET /terms-of-service': {
+    view: 'pages/terms-of-service'
+  },
+
 };
