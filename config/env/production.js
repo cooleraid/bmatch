@@ -53,6 +53,9 @@ module.exports = {
     facebook: {
       token: process.env.FACEBOOK_TOKEN
     },
+    telegram: {
+      token: process.env.TELEGRAM_TOKEN
+    },
     witAi: {
       token: process.env.WIT_AI_TOKEN
     },

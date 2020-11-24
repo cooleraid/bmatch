@@ -21,14 +21,16 @@ module.exports = {
     let data
     if (userData['channel'] == 'facebook') {
       data = await FacebookService.facebook(userData, responseData);
-    }
+    } else if (userData['channel'] == 'telegram') {
+      data = await TelegramService.telegram(userData, responseData);
+    } 
     await RequestService.notify(userData, data);
   },
   async insertUserDetails(userData) {
     if (userData['message'] == '/start' || userData['payload'] == '/start') {
       userData['nextSession'] = 'start';
     }
-    const user = await User.update({ chatId: userData['chatId'], isDeleted: false }).set({ nextSession: userData['nextSession'] }).fetch();
+    const user = await User.update({ chatId: userData['chatId'], channel: userData['channel'], isDeleted: false }).set({ nextSession: userData['nextSession'] }).fetch();
     if (!user.length) {
       userData['nextSession'] = 'start';
       await User.create(userData);
@@ -68,7 +70,8 @@ module.exports = {
   },
 
   async updateLocation(userData) {
-    const location = JSON.parse(userData['payload']);
+    const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
+    const location = JSON.parse(locationData);
     await User.update({ chatId: userData['chatId'], isDeleted: false }).set({ location: location['location'], locationCoordinates: location['coords'] });
   },
 
@@ -76,13 +79,13 @@ module.exports = {
     const result = await UtilityService.queryLocationInput(userData);
     if (result == false) {
       botResponse = `No results found.`;
-      await UtilityService.send(userData, botResponse, null, { facebook: 'message' });
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
 
       userData['nextSession'] = 'locationQuery';
       await UtilityService.updateNextSession(userData);
 
       botResponse = `What's your current location? (Input a word or phrase)`;
-      return await UtilityService.send(userData, botResponse, null, { facebook: 'message' })
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
     }
   },
 
@@ -93,13 +96,13 @@ module.exports = {
     const result = await UtilityService.queryLocationInput(userData);
     if (result == false) {
       botResponse = `No results found.`;
-      await UtilityService.send(userData, botResponse, null, { facebook: 'message' });
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
 
       userData['nextSession'] = 'donorRequestLocationQuery';
       await UtilityService.updateNextSession(userData);
 
       botResponse = `What's your current location/hospital? (Input a word or phrase)`;
-      return await UtilityService.send(userData, botResponse, null, { facebook: 'message' })
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
     }
   },
 
@@ -107,13 +110,13 @@ module.exports = {
     const result = await UtilityService.queryLocationInput(userData);
     if (result == false) {
       botResponse = `No results found.`;
-      await UtilityService.send(userData, botResponse, null, { facebook: 'message' });
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
 
       userData['nextSession'] = 'bloodDriveLocationQuery';
       await UtilityService.updateNextSession(userData);
 
       botResponse = `What's your current location? (Input a word or phrase)`;
-      return await UtilityService.send(userData, botResponse, null, { facebook: 'message' })
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
     }
   },
 
@@ -121,13 +124,13 @@ module.exports = {
     const result = await UtilityService.queryLocationInput(userData);
     if (result == false) {
       botResponse = `No results found.`;
-      await UtilityService.send(userData, botResponse, null, { facebook: 'message' });
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
 
       userData['nextSession'] = 'bloodBankLocationQuery';
       await UtilityService.updateNextSession(userData);
 
       botResponse = `What's your current location? (Input a word or phrase)`;
-      return await UtilityService.send(userData, botResponse, null, { facebook: 'message' })
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
     }
   },
 
@@ -141,11 +144,15 @@ module.exports = {
     if (result['items']) {
       if (result['items'].length > 0) {
         botResponse = `Search Result for ${userData['message']}:`;
-        await UtilityService.send(userData, botResponse, null, { facebook: 'message' });
+        await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
+        let count = 1;
         for (const res of result['items']) {
+          
           botResponse = `${res['address']['label'] ? res['address']['label'] : res['title']}`;
-          const data = [{ name: res['title'], id: JSON.stringify({ location: botResponse, coords: { lat: res['position']['lat'], long: res['position']['lng'] } }) }]
-          await UtilityService.send(userData, botResponse, data, { facebook: 'button_template' });
+          await redisClient.set(`${userData['chatId']}-locationData-${count}`, JSON.stringify({ location: botResponse, coords: { lat: res['position']['lat'], long: res['position']['lng'] } }));
+          const data = [{ name: res['title'], id: count }]
+          await UtilityService.send(userData, botResponse, data, { facebook: 'button_template', telegram: 'inline_keyboard' });
+          count++;
         }
         return true;
       } else {
@@ -179,7 +186,9 @@ module.exports = {
 
   async insertDonorRequestLocation(userData) {
     const requestId = await redisClient.get(`${userData['chatId']}-requestId`);
-    const location = JSON.parse(userData['payload']);
+    const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
+    
+    const location = JSON.parse(locationData);
     await Requests.update({ id: requestId, channel: userData['channel'], chatId: userData['chatId'] }).set({ location: location['location'], locationCoordinates: location['coords'] });
   },
 

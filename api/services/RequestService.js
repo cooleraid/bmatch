@@ -1,11 +1,27 @@
 const rp = require('request-promise');
 const facebookToken = sails.config.settings.facebook.token;
+const telegramToken = sails.config.settings.telegram.token;
 const witAiToken = sails.config.settings.witAi.token;
 const hereApiKey = sails.config.settings.here.apiKey;
 /**
  * RequestService.js
  */
 module.exports = {
+
+  async telegramCallbackRequest(userData) {
+    const uri = `https://api.telegram.org/bot${telegramToken}/answerCallbackQuery?callback_query_id=${userData['callbackId']}&text=%00&show_alert=false`;
+    const options = {
+      method: 'GET',
+      uri,
+      body: {},
+      json: true,
+      headers: {},
+    };
+    return await rp(options).catch((error) => {
+      sails.log.error('Error occurred while querying telegram');
+      sails.log.error(error);
+    });
+  },
 
   async fetchFacebookUserDetails(chatId) {
     const uri = `https://graph.facebook.com/${chatId}?fields=first_name,last_name&access_token=${facebookToken}`;
@@ -68,6 +84,9 @@ module.exports = {
         } else if ($request_type == "messenger_profile") {
           uri = `https://graph.facebook.com/v3.3/me/messenger_profile?access_token=${facebookToken}`;
         }
+      } else if (userData['channel'] == 'telegram') {
+        uri = `https://api.telegram.org/bot${telegramToken}/${data['type']}`;
+        data = data['data'];
       }
       const options = {
         method: 'POST',
