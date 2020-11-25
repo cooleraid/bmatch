@@ -74,7 +74,6 @@ module.exports = {
                     payload = input['callback_query']['data'];
                     message = input['callback_query']['data'];
                 } else {
-                    
                     chatId = input['message']['chat']['id'];
                     firstName = input['message']['from']['first_name'] ? input['message']['from']['first_name'] : null;
                     lastName = input['message']['from']['last_name'] ? input['message']['from']['last_name'] : null;
@@ -85,7 +84,7 @@ module.exports = {
                     latitude = input['message']['location'] ?  input['message']['location']['latitude'] : null;
                     longitude = input['message']['location'] ? input['message']['location']['longitude'] : null;
                 }
-                
+
             }
             userData['message'] = message;
             userData['payload'] = payload;
@@ -106,6 +105,8 @@ module.exports = {
             userData['nextSession'] = user ? user.nextSession : null;
             userData['donor'] = user ? user.donor : null;
             userData['countryCoordinates'] = user ? user.countryCoordinates : null;
+            userData['phoneNumber'] = user ? user.phoneNumber : null;
+            userData['gender'] = user ? user.gender : null;
             let botResponse
             if (userData['nextSession'] == 'start') {
                 userData['nextSession'] = 'phoneNumber';
@@ -400,9 +401,8 @@ module.exports = {
 
                     botResponse = `Finding a match...`;
                     await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
-
-                    botResponse = `Donor request sent to 5 matching recipient. Your contact details has been to sent to the donor.`;
-                    return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
+                
+                    return await UtilityService.findMatch(userData);
                 } else {
                     userData['nextSession'] = 'donorRequestLocationQuery';
                     await UtilityService.updateNextSession(userData);

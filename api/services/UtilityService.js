@@ -23,7 +23,7 @@ module.exports = {
       data = await FacebookService.facebook(userData, responseData);
     } else if (userData['channel'] == 'telegram') {
       data = await TelegramService.telegram(userData, responseData);
-    } 
+    }
     await RequestService.notify(userData, data);
   },
   async insertUserDetails(userData) {
@@ -72,7 +72,7 @@ module.exports = {
   async updateLocation(userData) {
     const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
     const location = JSON.parse(locationData);
-    await User.update({ chatId: userData['chatId'], isDeleted: false }).set({ location: location['location'], locationCoordinates: location['coords'] });
+    await User.update({ chatId: userData['chatId'], isDeleted: false }).set({ location: location['location'], locationCoordinates: [location['coords']['long'], location['coords']['lat']] });
   },
 
   async queryLocation(userData) {
@@ -85,6 +85,75 @@ module.exports = {
       await UtilityService.updateNextSession(userData);
 
       botResponse = `What's your current location? (Input a word or phrase)`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+  },
+
+  async findMatch(userData) {
+    const requestId = await redisClient.get(`${userData['chatId']}-requestId`);
+    const request = await Requests.findOne({ id: requestId, isDeleted: false });
+    if (!request) {
+      userData['nextSession'] = 'action';
+      await UtilityService.updateNextSession(userData);
+
+      botResponse = `An error was encountered. Kindly make the request again`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+    let bloodGroup = await Chart.find({ select: ['match'], where: { bloodGroup: request['bloodGroup'] } });
+    bloodGroup = _.map(bloodGroup, 'match')
+
+    userData['nextSession'] = 'action';
+    await UtilityService.updateNextSession(userData);
+    const bloodMatch = await new Promise(function (resolve, reject) {
+      User.native(function (err, collection) {
+        if (err) {
+          return reject(err);
+        }
+        var pipeline = []; //some pipeline
+        collection.aggregate([
+          {
+            $geoNear: {
+              near: { type: "Point", coordinates: [request['locationCoordinates']['long'], request['locationCoordinates']['lat']] },
+              distanceField: "dist.calculated",
+              maxDistance: 10 * 1000.0,
+              query: {
+                donor: true,
+                chatId: { $ne: userData['chatId'] },
+                phoneNumber: { $ne: userData['phoneNumber'] },
+                bloodGroup: { $in: bloodGroup }
+              },
+              distanceMultiplier: 0.001,
+              includeLocs: "dist.location",
+              spherical: true
+            }
+          }]).toArray(function (err, itemList) {
+            if (err) {
+              return reject(err);
+            }
+            var unserializedValues = [];
+            itemList.forEach(function (value) {
+              value = User._transformer.unserialize(value);
+              unserializedValues.push(value);
+            });
+
+            return resolve(unserializedValues);
+          })
+      })
+    });
+
+    if (bloodMatch.length > 0) {
+      botResponse = `Donor request sent to ${bloodMatch.length} matching recipient. Your contact details have been sent and you'd be contacted by the donor if your request is accepted.`;
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      for (const match of bloodMatch) {
+        botResponse = `New Blood Donor Request.\n
+        \nRecipient Name: "*${userData['firstName']} ${userData['lastName']}*" with blood type: "*${request['bloodGroup']}*" is in need of blood, reason: "*${request['reason']}*".
+        \nGender: ${userData['gender']}
+        \nRecipient Contact: ${userData['phoneNumber']}\nRecipient Location: ${request['location']}\nDistance: 5km\nEstimated Arrival Time: 67m.\n
+        \n*Note: We recommend you meet with the recipient in a known hospital/clinic/health center.*`;
+        return await UtilityService.send(match, botResponse, null, { facebook: 'message', telegram: 'message' })
+      }
+    } else {
+      botResponse = `Match Not Found.`;
       return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
     }
   },
@@ -147,7 +216,7 @@ module.exports = {
         await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
         let count = 1;
         for (const res of result['items']) {
-          
+
           botResponse = `${res['address']['label'] ? res['address']['label'] : res['title']}`;
           await redisClient.set(`${userData['chatId']}-locationData-${count}`, JSON.stringify({ location: botResponse, coords: { lat: res['position']['lat'], long: res['position']['lng'] } }));
           const data = [{ name: res['title'], id: count }]
@@ -187,7 +256,7 @@ module.exports = {
   async insertDonorRequestLocation(userData) {
     const requestId = await redisClient.get(`${userData['chatId']}-requestId`);
     const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
-    
+
     const location = JSON.parse(locationData);
     await Requests.update({ id: requestId, channel: userData['channel'], chatId: userData['chatId'] }).set({ location: location['location'], locationCoordinates: location['coords'] });
   },
