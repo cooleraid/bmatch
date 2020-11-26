@@ -152,10 +152,10 @@ module.exports = {
         \nGender: ${userData['gender']}
         \nRecipient Contact: ${userData['phoneNumber']}\nRecipient Location: ${request['location']}.
         \nTravel Mode: Car;
-        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
-        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}
+        \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
+        \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}
         \n*Note: We recommend you meet with the recipient in a known hospital/clinic/health center.*`;
-        return await UtilityService.send(match, botResponse, null, { facebook: 'message', telegram: 'message' })
+        await UtilityService.send(match, botResponse, null, { facebook: 'message', telegram: 'message' })
       }
     } else {
       botResponse = `Match Not Found.`;
@@ -208,18 +208,36 @@ module.exports = {
       })
     });
     userData['origin'] = `${location['coords']['lat']},${location['coords']['long']}`;
-    if (bloodBank.length > 0) {
-      botResponse = `${bloodBank.length} blood bank${bloodBank.length > 1 ? 's' : ''} found around ${location['location']}.\n\nBlood Bank Result:`;
+    const queryHereBloodBanks = await UtilityService.queryHereBloodBanks(userData);
+    if (bloodBank.length > 0 || queryHereBloodBanks.length > 0) {
+      const bloodBankCount = bloodBank.length > 0 ? bloodBank.length : 0;
+      const queryHereBloodBanksCount = queryHereBloodBanks.length > 0 ? queryHereBloodBanks.length : 0;
+      const count = bloodBankCount + queryHereBloodBanksCount;
+      botResponse = `${count} blood bank${count > 1 ? 's' : ''} found around ${location['location']}.\n\nBlood Bank Result:`;
       await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
-      for (const bank of bloodBank) {
-        userData['destination'] = `${bank['locationCoordinates'][1]},${bank['locationCoordinates'][0]}`;
-        const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
-        botResponse = `Name: ${bank['name']}.\n
-        \nAddress: ${bank['location']}.
-        \nTravel Mode: Car;
-        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
-        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}`;
-        return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      if (bloodBank.length > 0) {
+        for (const bank of bloodBank) {
+          userData['destination'] = `${bank['locationCoordinates'][1]},${bank['locationCoordinates'][0]}`;
+          const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
+          botResponse = `_(Bmatch Partner)_\nName: ${bank['name']}.\n
+          \nAddress: ${bank['location']}.
+          \nTravel Mode: Car;
+          \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
+          \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
+          await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+        }
+      }
+      if (queryHereBloodBanks.length > 0) {
+        for (const hereBank of queryHereBloodBanks) {
+          userData['destination'] = `${hereBank['position']['lat']},${hereBank['position']['lng']}`;
+          const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
+          botResponse = `Name: ${hereBank['title'] ? hereBank['title'] : hereBank['address']['label']}.\n
+          \nAddress: ${hereBank['address']['label'] ? hereBank['address']['label'] : hereBank['title']}.
+          \nTravel Mode: Car;
+          \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
+          \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
+          await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+        }
       }
     } else {
       botResponse = `Blood Bank Not Found.`;
@@ -281,13 +299,30 @@ module.exports = {
         botResponse = `Name: ${drive['name']}.\n
         \nAddress: ${drive['location']}.
         \nTravel Mode: Car;
-        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
-        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}`;
-        return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+        \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
+        \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
+        await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
       }
     } else {
       botResponse = `Blood Drive Not Found.`;
       return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+  },
+
+  async queryHereBloodBanks(userData) {
+    userData['hereQueryType'] = 'browse';
+    userData['hereQuery'] = `&at=${userData['origin']}&limit=6&categories=800-8000-0367&in=circle:${userData['origin']};r=10000`;
+    console.log(userData['hereQuery']);
+    const result = await RequestService.queryHere(userData, 'GET');
+    console.log(result)
+    if (result['items']) {
+      if (result['items'].length > 0) {
+        return result['items'];
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
   },
 
@@ -377,7 +412,6 @@ module.exports = {
         await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
         let count = 1;
         for (const res of result['items']) {
-
           botResponse = `${res['address']['label'] ? res['address']['label'] : res['title']}`;
           await redisClient.set(`${userData['chatId']}-locationData-${count}`, JSON.stringify({ location: botResponse, coords: { lat: res['position']['lat'], long: res['position']['lng'] } }));
           const data = [{ name: res['title'], id: count }]

@@ -60,6 +60,8 @@ module.exports = {
       uri = `https://discover.search.hereapi.com/v1/discover`;
     } else if (userData['hereQueryType'] == 'routes') {
       uri = `https://router.hereapi.com/v8/routes`;
+    } else if (userData['hereQueryType'] == 'browse') {
+      uri = `https://browse.search.hereapi.com/v1/browse`;
     }
     uri = `${uri}?apiKey=${hereApiKey}${userData['hereQuery']}`;
     const options = {
