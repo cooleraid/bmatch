@@ -140,21 +140,182 @@ module.exports = {
           })
       })
     });
-
+    userData['destination'] = `${request['locationCoordinates']['lat']},${request['locationCoordinates']['long']}`;
     if (bloodMatch.length > 0) {
       botResponse = `Donor request sent to ${bloodMatch.length} matching recipient. Your contact details have been sent and you'd be contacted by the donor if your request is accepted.`;
       await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
       for (const match of bloodMatch) {
+        userData['origin'] = `${match['locationCoordinates'][1]},${match['locationCoordinates'][0]}`;
+        const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
         botResponse = `New Blood Donor Request.\n
         \nRecipient Name: "*${userData['firstName']} ${userData['lastName']}*" with blood type: "*${request['bloodGroup']}*" is in need of blood, reason: "*${request['reason']}*".
         \nGender: ${userData['gender']}
-        \nRecipient Contact: ${userData['phoneNumber']}\nRecipient Location: ${request['location']}\nDistance: 5km\nEstimated Arrival Time: 67m.\n
+        \nRecipient Contact: ${userData['phoneNumber']}\nRecipient Location: ${request['location']}.
+        \nTravel Mode: Car;
+        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
+        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}
         \n*Note: We recommend you meet with the recipient in a known hospital/clinic/health center.*`;
         return await UtilityService.send(match, botResponse, null, { facebook: 'message', telegram: 'message' })
       }
     } else {
       botResponse = `Match Not Found.`;
       return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+  },
+
+  async findBloodBank(userData) {
+    const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
+    if (!locationData) {
+      userData['nextSession'] = 'action';
+      await UtilityService.updateNextSession(userData);
+
+      botResponse = `An error was encountered. Kindly search again`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+
+    userData['nextSession'] = 'action';
+    await UtilityService.updateNextSession(userData);
+
+    const location = JSON.parse(locationData);
+    const bloodBank = await new Promise(function (resolve, reject) {
+      BloodBank.native(function (err, collection) {
+        if (err) {
+          return reject(err);
+        }
+        collection.aggregate([
+          {
+            $geoNear: {
+              near: { type: "Point", coordinates: [location['coords']['long'], location['coords']['lat']] },
+              distanceField: "dist.calculated",
+              maxDistance: 10 * 1000.0,
+              query: {},
+              distanceMultiplier: 0.001,
+              includeLocs: "dist.location",
+              spherical: true
+            }
+          }]).toArray(function (err, itemList) {
+            if (err) {
+              return reject(err);
+            }
+            var unserializedValues = [];
+            itemList.forEach(function (value) {
+              value = BloodBank._transformer.unserialize(value);
+              unserializedValues.push(value);
+            });
+
+            return resolve(unserializedValues);
+          })
+      })
+    });
+    userData['origin'] = `${location['coords']['lat']},${location['coords']['long']}`;
+    if (bloodBank.length > 0) {
+      botResponse = `${bloodBank.length} blood bank${bloodBank.length > 1 ? 's' : ''} found around ${location['location']}.\n\nBlood Bank Result:`;
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      for (const bank of bloodBank) {
+        userData['destination'] = `${bank['locationCoordinates'][1]},${bank['locationCoordinates'][0]}`;
+        const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
+        botResponse = `Name: ${bank['name']}.\n
+        \nAddress: ${bank['location']}.
+        \nTravel Mode: Car;
+        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
+        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}`;
+        return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      }
+    } else {
+      botResponse = `Blood Bank Not Found.`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+  },
+
+  async findBloodDrive(userData) {
+    const locationData = await redisClient.get(`${userData['chatId']}-locationData-${userData['payload']}`);
+    if (!locationData) {
+      userData['nextSession'] = 'action';
+      await UtilityService.updateNextSession(userData);
+
+      botResponse = `An error was encountered. Kindly search again`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+
+    userData['nextSession'] = 'action';
+    await UtilityService.updateNextSession(userData);
+
+    const location = JSON.parse(locationData);
+    const bloodDrive = await new Promise(function (resolve, reject) {
+      BloodDrive.native(function (err, collection) {
+        if (err) {
+          return reject(err);
+        }
+        collection.aggregate([
+          {
+            $geoNear: {
+              near: { type: "Point", coordinates: [location['coords']['long'], location['coords']['lat']] },
+              distanceField: "dist.calculated",
+              maxDistance: 10 * 1000.0,
+              query: {},
+              distanceMultiplier: 0.001,
+              includeLocs: "dist.location",
+              spherical: true
+            }
+          }]).toArray(function (err, itemList) {
+            if (err) {
+              return reject(err);
+            }
+            var unserializedValues = [];
+            itemList.forEach(function (value) {
+              value = BloodDrive._transformer.unserialize(value);
+              unserializedValues.push(value);
+            });
+
+            return resolve(unserializedValues);
+          })
+      })
+    });
+    userData['origin'] = `${location['coords']['lat']},${location['coords']['long']}`;
+    if (bloodDrive.length > 0) {
+      botResponse = `${bloodDrive.length} blood drive${bloodDrive.length > 1 ? 's' : ''} found around ${location['location']}.\n\nBlood Drive Result:`;
+      await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      for (const drive of bloodDrive) {
+        userData['destination'] = `${drive['locationCoordinates'][1]},${drive['locationCoordinates'][0]}`;
+        const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
+        botResponse = `Name: ${drive['name']}.\n
+        \nAddress: ${drive['location']}.
+        \nTravel Mode: Car;
+        \nDistance: ${fetchDurationLength ? `${fetchDurationLength['length'] / 1000}km` : 'NA'}.
+        \nEstimated Arrival Time: ${fetchDurationLength ? `${fetchDurationLength['duration'] / 60}min` : 'NA'}`;
+        return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+      }
+    } else {
+      botResponse = `Blood Drive Not Found.`;
+      return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
+    }
+  },
+
+  async fetchDurationLength(userData) {
+    userData['hereQueryType'] = 'routes';
+    userData['hereQuery'] = `&transportMode=car&origin=${userData['origin']}&destination=${userData['destination']}&return=summary`
+
+    const result = await RequestService.queryHere(userData, 'GET');
+    if (result['routes']) {
+      if (result['routes'].length > 0) {
+        if (result['routes'][0]['sections']) {
+          if (result['routes'][0]['sections'].length > 0) {
+            if (result['routes'][0]['sections'][0]['summary']) {
+              return result['routes'][0]['sections'][0]['summary'];
+            } else {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    } else {
+      return false;
     }
   },
 

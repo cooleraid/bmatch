@@ -11,8 +11,16 @@
 
 module.exports.bootstrap = async function() {
 
-  const db = User.getDatastore().manager;
-  const collection = db.collection(User.tableName);
-  collection.ensureIndex({ locationCoordinates: "2dsphere" });
+  const dbUser = User.getDatastore().manager;
+  const collectionUser = dbUser.collection(User.tableName);
+  collectionUser.ensureIndex({ locationCoordinates: "2dsphere" });
+
+  const dbBloodBank = BloodBank.getDatastore().manager;
+  const collectionBloodBank = dbBloodBank.collection(BloodBank.tableName);
+  collectionBloodBank.ensureIndex({ locationCoordinates: "2dsphere" });
+
+  const dbBloodDrive = BloodDrive.getDatastore().manager;
+  const collectionBloodDrive = dbBloodDrive.collection(BloodDrive.tableName);
+  collectionBloodDrive.ensureIndex({ locationCoordinates: "2dsphere" });
 
 };

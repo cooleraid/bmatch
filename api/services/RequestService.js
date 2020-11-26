@@ -46,7 +46,7 @@ module.exports = {
       uri,
       body: {},
       json: true,
-      headers: {Authorization: `Bearer ${witAiToken}`},
+      headers: { Authorization: `Bearer ${witAiToken}` },
     };
     return await rp(options).catch((error) => {
       sails.log.error('Error occurred while querying wit ai');
@@ -55,9 +55,11 @@ module.exports = {
   },
 
   async queryHere(userData, method = null) {
-    let uri 
+    let uri
     if (userData['hereQueryType'] == 'discover') {
       uri = `https://discover.search.hereapi.com/v1/discover`;
+    } else if (userData['hereQueryType'] == 'routes') {
+      uri = `https://router.hereapi.com/v8/routes`;
     }
     uri = `${uri}?apiKey=${hereApiKey}${userData['hereQuery']}`;
     const options = {

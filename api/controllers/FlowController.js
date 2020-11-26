@@ -81,7 +81,7 @@ module.exports = {
                     messageId = input['message']['message_id'] ? input['message']['message_id'] : null;
                     message = input['message']['text'] ? input['message']['text'] : null;
                     contactPayload = input['message']['contact'] ? input['message']['contact']['phone_number'] : null;
-                    latitude = input['message']['location'] ?  input['message']['location']['latitude'] : null;
+                    latitude = input['message']['location'] ? input['message']['location']['latitude'] : null;
                     longitude = input['message']['location'] ? input['message']['location']['longitude'] : null;
                 }
 
@@ -304,7 +304,7 @@ module.exports = {
                         userData['nextSession'] = 'donorRequestReason';
                         await UtilityService.updateNextSession(userData);
 
-                        botResponse = `Please enter a request why you're requesting for blood:`;
+                        botResponse = `Please enter a reason why you're requesting for blood:`;
                         return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
                     } else if (queryWit['entities']['answer:answer'][0]['value'] == 'no') {
                         userData['nextSession'] = 'action';
@@ -401,7 +401,7 @@ module.exports = {
 
                     botResponse = `Finding a match...`;
                     await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
-                
+
                     return await UtilityService.findMatch(userData);
                 } else {
                     userData['nextSession'] = 'donorRequestLocationQuery';
@@ -433,8 +433,7 @@ module.exports = {
                     botResponse = `Finding the closest blood drive...`;
                     await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
 
-                    botResponse = `Blood Drives:`;
-                    return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
+                    return await UtilityService.findBloodDrive(userData);;
                 } else {
                     userData['nextSession'] = 'bloodDriveLocationQuery';
                     await UtilityService.updateNextSession(userData);
@@ -465,8 +464,7 @@ module.exports = {
                     botResponse = `Finding the closest blood banks...`;
                     await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
 
-                    botResponse = `Blood Banks:`;
-                    return await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' });
+                    return await UtilityService.findBloodBank(userData);;
                 } else {
                     userData['nextSession'] = 'bloodBankLocationQuery';
                     await UtilityService.updateNextSession(userData);
