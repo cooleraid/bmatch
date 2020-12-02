@@ -219,7 +219,7 @@ module.exports = {
         for (const bank of bloodBank) {
           userData['destination'] = `${bank['locationCoordinates'][1]},${bank['locationCoordinates'][0]}`;
           const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
-          botResponse = `_(Bmatch Partner)_\nName: ${bank['name']}.\n
+          botResponse = `${bank['type'] == 'bmatch' ? `_(Bmatch Partner)_\n` : ''}Name: ${bank['name']}.\n
           \nAddress: ${bank['location']}.
           \nTravel Mode: Car;
           \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
@@ -297,7 +297,9 @@ module.exports = {
         userData['destination'] = `${drive['locationCoordinates'][1]},${drive['locationCoordinates'][0]}`;
         const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
         botResponse = `Name: ${drive['name']}.\n
-        \nAddress: ${drive['location']}.
+        \nAddress: ${drive['location']}.${drive['contactNumber'] ? `
+        \nContact: ${drive['contactNumber']}.` : ''}${drive['operatingTime'] ? `
+        \Operating Time: ${drive['operatingTime']}.` : ''}
         \nTravel Mode: Car;
         \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
         \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;

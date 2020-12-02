@@ -12,11 +12,24 @@ module.exports = {
       type: 'string',
       required: true,
     },
+    country: {
+      type: 'string',
+    },
+    countryCoordinates: {
+      type: 'json',
+    },
     location: {
       type: 'string',
     },
     locationCoordinates: {
       type: 'json',
+    },
+    hereId: {
+      type: 'string',
+    },
+    type: {
+      type: ['here', 'bmatch'],
+      defaultsTo: 'bmatch'
     },
     isDeleted: {
       type: 'boolean',

@@ -18,6 +18,12 @@ module.exports = {
     locationCoordinates: {
       type: 'json',
     },
+    contactNumber: {
+      type: 'string',
+    },
+    operatingTime: {
+      type: 'string',
+    },
     isDeleted: {
       type: 'boolean',
       defaultsTo: false,
