@@ -1,8 +1,11 @@
 const rp = require('request-promise');
+const request = require('request');
 const facebookToken = sails.config.settings.facebook.token;
 const telegramToken = sails.config.settings.telegram.token;
 const witAiToken = sails.config.settings.witAi.token;
 const hereApiKey = sails.config.settings.here.apiKey;
+const hereSAspaceId = sails.config.settings.here.sa.placeSpaceId;
+const hereAccessToken = sails.config.settings.here.accessToken;
 /**
  * RequestService.js
  */
@@ -64,6 +67,7 @@ module.exports = {
       uri = `https://browse.search.hereapi.com/v1/browse`;
     }
     uri = `${uri}?apiKey=${hereApiKey}${userData['hereQuery']}`;
+
     const options = {
       method,
       uri,
@@ -76,6 +80,24 @@ module.exports = {
     return await rp(options).catch((error) => {
       sails.log.error('Error occurred while querying here');
       sails.log.error(error);
+    });
+  },
+
+  async queryHereDataLayer(hereQueryType="", handle = "") {
+    let uri;
+    if (hereQueryType == 'iterate') {
+      uri = `https://xyz.api.here.com/hub/spaces/${hereSAspaceId}/iterate?access_token=${hereAccessToken}&limit=1000${handle}`;
+    } else if (hereQueryType == 'count') {
+      uri = `https://xyz.api.here.com/hub/spaces/${hereSAspaceId}/count?access_token=${hereAccessToken}`;
+    }
+    return new Promise(function (resolve, reject) {
+      request(uri, function (error, res, body) {
+        if (!error && res.statusCode == 200) {
+          resolve(JSON.parse(body));
+        } else {
+          reject(error);
+        }
+      });
     });
   },
 

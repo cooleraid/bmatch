@@ -217,10 +217,17 @@ module.exports = {
       await UtilityService.send(userData, botResponse, null, { facebook: 'message', telegram: 'message' })
       if (bloodBank.length > 0) {
         for (const bank of bloodBank) {
+          let contact = "";
+          if (bank?.contacts?.length > 0) {
+            contact = `\nContacts:\n`;
+            for (const cont of bank.contacts) {
+              contact += `\n-${cont.contactType}: ${cont.value}\n`;
+            }
+          }
           userData['destination'] = `${bank['locationCoordinates'][1]},${bank['locationCoordinates'][0]}`;
           const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
           botResponse = `${bank['type'] == 'bmatch' ? `_(Bmatch Partner)_\n` : ''}Name: ${bank['name']}.\n
-          \nAddress: ${bank['location']}.
+          \nAddress: ${bank['location']}.${contact}
           \nTravel Mode: Car;
           \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
           \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
@@ -229,10 +236,20 @@ module.exports = {
       }
       if (queryHereBloodBanks.length > 0) {
         for (const hereBank of queryHereBloodBanks) {
+          let contact = "";
+          if (hereBank?.contacts?.length > 0) {
+            contact = `\nContacts:\n`;
+            if (hereBank.contacts[0].email){
+              contact += `\n-EMAIL: ${hereBank.contacts[0].email[0].value}\n`;
+            }
+            if (hereBank.contacts[0].phone){
+              contact += `\n-PHONE: ${hereBank.contacts[0].phone[0].value}\n`;
+            }
+          }
           userData['destination'] = `${hereBank['position']['lat']},${hereBank['position']['lng']}`;
           const fetchDurationLength = await UtilityService.fetchDurationLength(userData);
           botResponse = `Name: ${hereBank['title'] ? hereBank['title'] : hereBank['address']['label']}.\n
-          \nAddress: ${hereBank['address']['label'] ? hereBank['address']['label'] : hereBank['title']}.
+          \nAddress: ${hereBank['address']['label'] ? hereBank['address']['label'] : hereBank['title']}.${contact}
           \nTravel Mode: Car;
           \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
           \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
@@ -314,9 +331,7 @@ module.exports = {
   async queryHereBloodBanks(userData) {
     userData['hereQueryType'] = 'browse';
     userData['hereQuery'] = `&at=${userData['origin']}&limit=6&categories=800-8000-0367&in=circle:${userData['origin']};r=10000`;
-    console.log(userData['hereQuery']);
     const result = await RequestService.queryHere(userData, 'GET');
-    console.log(result)
     if (result['items']) {
       if (result['items'].length > 0) {
         return result['items'];

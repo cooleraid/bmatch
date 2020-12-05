@@ -24,11 +24,16 @@ module.exports = {
     locationCoordinates: {
       type: 'json',
     },
+    contacts: {
+      type: 'json', 
+      columnType: 'array'
+    },
     hereId: {
       type: 'string',
     },
     type: {
-      type: ['here', 'bmatch'],
+      type: 'string',
+      isIn: ['here', 'bmatch'],
       defaultsTo: 'bmatch'
     },
     isDeleted: {

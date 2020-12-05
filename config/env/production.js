@@ -60,7 +60,11 @@ module.exports = {
       token: process.env.WIT_AI_TOKEN
     },
     here: {
-      apiKey: process.env.HERE_API_KEY
+      apiKey: process.env.HERE_API_KEY,
+      accessToken: process.env.HERE_ACCESS_TOKEN,
+      sa: {
+        placeSpaceId: process.env.HERE_SA_PLACE_SPACE_ID
+      }
     },
   },
   http: {
