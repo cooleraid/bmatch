@@ -316,7 +316,7 @@ module.exports = {
         botResponse = `Name: ${drive['name']}.\n
         \nAddress: ${drive['location']}.${drive['contactNumber'] ? `
         \nContact: ${drive['contactNumber']}.` : ''}${drive['operatingTime'] ? `
-        \Operating Time: ${drive['operatingTime']}.` : ''}
+        \nOperating Time: ${drive['operatingTime']}.` : ''}
         \nTravel Mode: Car;
         \nDistance: ${fetchDurationLength ? `${(fetchDurationLength['length'] / 1000).toFixed(2)}km` : 'NA'}.
         \nEstimated Arrival Time: ${fetchDurationLength ? `${(fetchDurationLength['duration'] / 60).toFixed(2)}min` : 'NA'}`;
