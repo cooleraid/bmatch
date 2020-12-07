@@ -1,26 +1,87 @@
-# bmatchbot
+# Bmatch
+Connect voluntary blood donors with recipients. Chatbot built with Here, Telegram, Facebook messenger, Wit ai, and Sails JS
 
-a [Sails v1](https://sailsjs.com) application
+## Requirements
+1. [Here](https://developer.here.com/)  Developers Account
+2. [Wit AI](https://wit.ai/) Account.
+3. [Facebook Messenger](https://developers.facebook.com/docs/messenger-platform/) Account.
+4. [Telegram](https://telegram.org/) Account.
+5. Mac OS (feel free to use any OS).
+6. [Git](https://git-scm.com/).
+7. Node (NPM)
+8. [Sails JS](https://sailsjs.com/).
+9. [Mongo DB](https://www.mongodb.com/).
+10. [Ngrok](https://ngrok.com/) or a cloud hosting service (DigitalOcean, AWS).
 
+## Setup
+#### Here:
+1. Create a freemium account via [Here](https://developer.here.com/).
+2. Create an API Key and store it in your OS environment variable by running:
 
-### Links
+```bash
+export HERE_API_KEY=YOUR-API-KEY
+```
+3. Create places data layer and store the space ID in your OS environment variable by running:
 
-+ [Sails framework documentation](https://sailsjs.com/get-started)
-+ [Version notes / upgrading](https://sailsjs.com/documentation/upgrading)
-+ [Deployment tips](https://sailsjs.com/documentation/concepts/deployment)
-+ [Community support options](https://sailsjs.com/support)
-+ [Professional / enterprise options](https://sailsjs.com/enterprise)
+```bash
+export HERE_SA_PLACE_SPACE_ID=YOUR-SPACE-ID
+```
+*Note: We used South Africa data layer. Feel free to replace HERE_SA_PLACE_SPACE_ID with your preferred variable name and also update it in your code*
+4. Create an [access token](https://xyz.api.here.com/token-ui/index.html) and store it in your OS environment variable by running:
 
+```bash
+export HERE_ACCESS_TOKEN=YOUR-ACCESS-TOKEN
+```
+#### Telegram:
+1. Create a new chatbot via [BotFather](https://telegram.me/BotFather).
+2. Store the newly created telegram bot access token in your OS environment variable by running:
 
-### Version info
+```bash
+export TELEGRAM_TOKEN=YOUR-ACCESS-TOKEN
+```
 
-This app was originally generated on Sun Nov 01 2020 20:19:43 GMT+0100 (West Africa Standard Time) using Sails v1.4.0.
+#### Facebook
+1. Follow the necessary steps to create a developer account and chatbot via [Facebook Messenger Documentation](https://developers.facebook.com/docs/messenger-platform/).
+2. Store your Facebook token in your OS environment variable by running:
+```bash
+export FACEBOOK_TOKEN=YOUR-FACEBOOK-APP-TOKEN
+```
+#### Wit AI:
+1. Store the wit.ai server access token in your OS environment variable by running:
 
-<!-- Internally, Sails used [`sails-generate@2.0.0`](https://github.com/balderdashy/sails-generate/tree/v2.0.0/lib/core-generators/new). -->
+```bash
+export WIT_AI_TOKEN=YOUR-WITAI-ACCESS-TOKEN
+```
 
+## Usage
+Navigate to the project directory in your terminal and install the necessary packages
 
+```bash
+npm install
+```
+Start the project by running:
+##### Production
+```bash
+npm run start
+```
+##### Development
+```bash
+npm run dev
+```
+Open a new terminal, Navigate to the project directory and start your Ngrok Server
 
-<!--
-Note:  Generators are usually run using the globally-installed `sails` CLI (command-line interface).  This CLI version is _environment-specific_ rather than app-specific, thus over time, as a project's dependencies are upgraded or the project is worked on by different developers on different computers using different versions of Node.js, the Sails dependency in its package.json file may differ from the globally-installed Sails CLI release it was originally generated with.  (Be sure to always check out the relevant [upgrading guides](https://sailsjs.com/upgrading) before upgrading the version of Sails used by your app.  If you're stuck, [get help here](https://sailsjs.com/support).)
--->
+```bash
+ngrok http 1500
+```
+To set the webhook URL to your telegram chatbot, run this in your terminal. 
+Note: Replace YOUR_NGROK_URL with your Ngrok server URL.
 
+```bash
+curl https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook?url=https://YOUR_NGROK_URL/flow/callback/telegram
+```
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+[MIT](https://github.com/cooleraid/bmatch/blob/master/LICENSE)
